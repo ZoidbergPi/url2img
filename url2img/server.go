@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -32,6 +33,11 @@ type Server struct {
 // NewServer returns new Server
 func NewServer() *Server {
 	return &Server{}
+}
+
+type Jsaver struct {
+        imgdata   string  `json:"imgdata"`
+	hsource   string  `json:"hsource"`
 }
 
 // ServeHTTP handles requests on incoming connections
@@ -76,8 +82,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	str, _ := loaded.Load(p.Id)
 	loaded.Delete(p.Id)
+	hp := &Jsaver{}
+        err := json.Unmarshal([]byte(str), hp)
 
-	data, err := hex.DecodeString(str.(string))
+	data, err := hex.DecodeString(hp.imgdata.(string))
 	if err != nil {
 		msg := fmt.Sprintf("500 Internal Server Error (%s)", err.Error())
 		http.Error(w, msg, http.StatusInternalServerError)
@@ -107,6 +115,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "html":
 		html := "<!DOCTYPE html><html><body><img src=\"data:image/%s;base64,%s\" download\"%s\"/></body></html>"
 		html = fmt.Sprintf(html, p.Format, base64.StdEncoding.EncodeToString(data), p.Url+"."+p.Format)
+		w.Write([]byte(html))
+	case "b64html":
+		html := "data:image/%s;base64,%s\r\n\r\n%s"
+		html = fmt.Sprintf(html, p.Format, base64.StdEncoding.EncodeToString(data), hp.hsource)
 		w.Write([]byte(html))
 	}
 }
