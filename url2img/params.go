@@ -292,7 +292,7 @@ func (p *Params) validFormat(format string) bool {
 
 // validOutput checks if output is valid
 func (p *Params) validOutput(out string) bool {
-	for _, o := range []string{"raw", "base64", "html"} {
+	for _, o := range []string{"raw", "base64", "html","b64withhtml"} {
 		if o == out {
 			return true
 		}
