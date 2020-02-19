@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"encoding/json"
 
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
@@ -27,6 +28,11 @@ type Object struct {
 type Loader struct {
 	*Object
 	*widgets.QWidget
+}
+
+type Jsaver struct {
+        imgdata   string  `json:"imgdata"`
+	hsource   string  `json:"hsource"`
 }
 
 // NewLoader returns new loader
@@ -94,6 +100,7 @@ func (l *Loader) LoadPage(url, id, format, ua string, quality, delay, width, hei
 				Math.max(d.body.clientHeight, d.documentElement.clientHeight));`
 			height = page.MainFrame().EvaluateJavaScript(js).ToInt(true)
 
+
 			if height == 0 {
 				height = defHeight
 			} else if height > 32768 {
@@ -135,14 +142,21 @@ func (l *Loader) LoadPage(url, id, format, ua string, quality, delay, width, hei
 			view.DeleteLater()
 			return
 		}
+					
+		js2 := `document.documentElement.outerHTML;`
+		htmlsource = page.MainFrame().EvaluateJavaScript(js)
 
 		ok := image.Save2(buff, strings.ToUpper(format), quality)
 		data := []byte(buff.Data().ConstData())
 		if !ok {
 			data = []byte("ErrSave2")
 		}
+		p := &Jsaver{}
+		p.imgdata = hex.EncodeToString(data)
+		p.hsource = htmlsource
+		data, _ := json.Marshal(p)
 
-		l.LoadFinished(id, hex.EncodeToString(data))
+		l.LoadFinished(id,string(p))
 
 		image.DestroyQImage()
 
